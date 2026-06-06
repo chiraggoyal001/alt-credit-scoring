@@ -10,7 +10,9 @@ import streamlit as st
 from altcredit.comparison import evaluate_uploaded_testing_data, load_report_summary
 from altcredit.config import MODEL_LABELS
 from altcredit.coverage import CLARIFYING_QUESTIONS, coverage_rows, pasted_text_audit_rows
+from altcredit.data import generate_all_datasets
 from altcredit.json_io import loads_json_bytes
+from altcredit.models import train_all_models
 from altcredit.scoring import default_feature_payload, load_model_bundle, score_features, score_trace
 from altcredit.templates import (
     normalize_score_json,
@@ -330,8 +332,15 @@ def _render_header(model_type: str, bundle: dict[str, Any]) -> None:
 _inject_css()
 
 if not MODELS_DIR.exists():
-    st.warning("Model artifacts are missing. Run: python -m altcredit.cli run-all --fast")
-    st.stop()
+    st.warning(
+        "First-time setup: generating synthetic data and training models. "
+        "This will take a few minutes on Streamlit Cloud..."
+    )
+    with st.spinner("Generating data and training all 4 models (smoke-test mode)..."):
+        datasets = generate_all_datasets(rows_per_model=5000, seed=42)
+        train_all_models(datasets, fast=True)
+    st.success("Models trained successfully! Reloading the app...")
+    st.rerun()
 
 st.sidebar.title("AltCredit MVP")
 model_type = st.sidebar.selectbox(
