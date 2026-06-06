@@ -8,9 +8,9 @@ import pandas as pd
 import streamlit as st
 
 from altcredit.comparison import evaluate_uploaded_testing_data, load_report_summary
-from altcredit.config import MODEL_LABELS
+from altcredit.config import MODEL_LABELS, MODEL_TYPES
 from altcredit.coverage import CLARIFYING_QUESTIONS, coverage_rows, pasted_text_audit_rows
-from altcredit.data import generate_all_datasets
+from altcredit.data import generate_all_datasets, load_generated_datasets
 from altcredit.json_io import loads_json_bytes
 from altcredit.models import train_all_models
 from altcredit.scoring import default_feature_payload, load_model_bundle, score_features, score_trace
@@ -26,7 +26,15 @@ st.set_page_config(page_title="AltCredit MVP", layout="wide")
 
 MODELS_DIR = Path("artifacts/models")
 REPORTS_DIR = Path("artifacts/reports")
+SYNTHETIC_DATA_DIR = Path("data/synthetic")
 TESTING_DATA_DIR = Path("data/testing")
+
+
+def _is_trained() -> bool:
+    """Check if model artifacts exist for all models."""
+    if not MODELS_DIR.exists():
+        return False
+    return all((MODELS_DIR / f"{mt}.joblib").exists() for mt in MODEL_TYPES)
 
 
 def _inject_css() -> None:
@@ -331,13 +339,29 @@ def _render_header(model_type: str, bundle: dict[str, Any]) -> None:
 
 _inject_css()
 
-if not MODELS_DIR.exists():
+
+def _is_trained() -> bool:
+    """Check if model artifacts exist for all models."""
+    if not MODELS_DIR.exists():
+        return False
+    return all((MODELS_DIR / f"{mt}.joblib").exists() for mt in MODEL_TYPES)
+
+
+if not _is_trained():
     st.warning(
-        "First-time setup: generating synthetic data and training models. "
+        "First-time setup: preparing synthetic data and training models. "
         "This will take a few minutes on Streamlit Cloud..."
     )
-    with st.spinner("Generating data and training all 4 models (smoke-test mode)..."):
-        datasets = generate_all_datasets(rows_per_model=5000, seed=42)
+    with st.spinner("Initializing models (smoke-test mode)..."):
+        # Use existing data if available in the repo, otherwise generate
+        data_exists = SYNTHETIC_DATA_DIR.exists() and all(
+            (SYNTHETIC_DATA_DIR / f"{mt}.csv").exists() for mt in MODEL_TYPES
+        )
+        if data_exists:
+            datasets = load_generated_datasets(SYNTHETIC_DATA_DIR)
+        else:
+            datasets = generate_all_datasets(rows_per_model=2000, seed=42)
+
         train_all_models(datasets, fast=True)
     st.success("Models trained successfully! Reloading the app...")
     st.rerun()
