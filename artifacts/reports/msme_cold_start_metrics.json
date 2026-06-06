@@ -1,0 +1,28 @@
+{
+  "roc_auc": 0.6836459078316055,
+  "gini": 0.367291815663211,
+  "average_precision": 0.09393373164330782,
+  "brier_loss": 0.050929501777857294,
+  "accuracy_at_pd_0_50": 0.9692,
+  "approval_rate": 0.6088,
+  "approved_default_rate": 0.015111695137976347,
+  "portfolio_default_rate": 0.0236,
+  "score_threshold": 826.8493150684932,
+  "pd_cutoff": 0.12191780821917808,
+  "confusion_matrix_at_pd_0_50": {
+    "tn": 2418,
+    "fp": 23,
+    "fn": 54,
+    "tp": 5
+  },
+  "operating_point_score_threshold": 826.8493150684932,
+  "operating_point_pd_cutoff": 0.12191780821917808,
+  "operating_point_approval_rate": 0.6088,
+  "operating_point_approved_default_rate": 0.015111695137976347,
+  "operating_point_cibil_like_approval_rate": 0.25,
+  "operating_point_cibil_like_default_rate": 0.016,
+  "cibil_like_approval_rate": 0.25,
+  "cibil_like_approved_default_rate": 0.016,
+  "approval_lift_vs_cibil_like": 0.3588,
+  "default_rate_delta_vs_cibil_like": -0.0008883048620236533
+}

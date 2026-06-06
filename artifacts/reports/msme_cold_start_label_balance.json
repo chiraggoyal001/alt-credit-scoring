@@ -1,0 +1,70 @@
+{
+  "promoter_gender": {
+    "target_rate_gap": 0.004424484364604124,
+    "target_rates": {
+      "female": 0.026646706586826347,
+      "male": 0.02252252252252252,
+      "non_binary": 0.022222222222222223
+    }
+  },
+  "promoter_age_band": {
+    "target_rate_gap": 0.003599999999999999,
+    "target_rates": {
+      "18_25": 0.0232,
+      "26_35": 0.0216,
+      "36_50": 0.0252,
+      "51_65": 0.0252
+    }
+  },
+  "state_group": {
+    "target_rate_gap": 0.007950364331577805,
+    "target_rates": {
+      "central": 0.027710843373493974,
+      "east": 0.02215568862275449,
+      "north": 0.026347305389221556,
+      "northeast": 0.02289156626506024,
+      "south": 0.01976047904191617,
+      "west": 0.023952095808383235
+    }
+  },
+  "location_tier": {
+    "target_rate_gap": 0.003199999999999998,
+    "target_rates": {
+      "metro": 0.0228,
+      "rural_cluster": 0.0236,
+      "tier_1": 0.0228,
+      "tier_2": 0.026
+    }
+  },
+  "sector": {
+    "target_rate_gap": 0.012799999999999999,
+    "target_rates": {
+      "agri_allied": 0.0288,
+      "digital_services": 0.0224,
+      "food_service": 0.024,
+      "kirana_fmcg": 0.028,
+      "light_manufacturing": 0.0264,
+      "professional_services": 0.0224,
+      "textiles": 0.016,
+      "traders_distribution": 0.0224
+    }
+  },
+  "capital_tier": {
+    "target_rate_gap": 0.004400000000000001,
+    "target_rates": {
+      "lower_medium": 0.024,
+      "micro": 0.0256,
+      "small": 0.0212,
+      "upper_medium": 0.0244
+    }
+  },
+  "business_location_tier": {
+    "target_rate_gap": 0.0063999999999999994,
+    "target_rates": {
+      "metro": 0.024,
+      "rural_cluster": 0.0212,
+      "tier_1": 0.0224,
+      "tier_2": 0.0276
+    }
+  }
+}

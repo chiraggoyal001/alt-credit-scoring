@@ -1,0 +1,171 @@
+{
+  "promoter_gender": {
+    "disparate_impact_ratio": 0.9844081955129902,
+    "passes_80_percent_rule": true,
+    "selection_rates": {
+      "female": 0.6100702576112412,
+      "male": 0.6033857315598549,
+      "non_binary": 0.612942612942613
+    },
+    "observed_default_rates": {
+      "female": 0.03044496487119438,
+      "male": 0.019347037484885126,
+      "non_binary": 0.020757020757020756
+    },
+    "counts": {
+      "female": 854,
+      "male": 827,
+      "non_binary": 819
+    }
+  },
+  "promoter_age_band": {
+    "disparate_impact_ratio": 0.9736934010152284,
+    "passes_80_percent_rule": true,
+    "selection_rates": {
+      "18_25": 0.6032,
+      "26_35": 0.6194968553459119,
+      "36_50": 0.6072013093289689,
+      "51_65": 0.6050955414012739
+    },
+    "observed_default_rates": {
+      "18_25": 0.0208,
+      "26_35": 0.018867924528301886,
+      "36_50": 0.031096563011456628,
+      "51_65": 0.02388535031847134
+    },
+    "counts": {
+      "18_25": 625,
+      "26_35": 636,
+      "36_50": 611,
+      "51_65": 628
+    }
+  },
+  "state_group": {
+    "disparate_impact_ratio": 0.9211539466578402,
+    "passes_80_percent_rule": true,
+    "selection_rates": {
+      "central": 0.6270022883295194,
+      "east": 0.6163366336633663,
+      "north": 0.5933806146572104,
+      "northeast": 0.6145833333333334,
+      "south": 0.6235565819861432,
+      "west": 0.5775656324582339
+    },
+    "observed_default_rates": {
+      "central": 0.018306636155606407,
+      "east": 0.027227722772277228,
+      "north": 0.02127659574468085,
+      "northeast": 0.020833333333333332,
+      "south": 0.025404157043879907,
+      "west": 0.028639618138424822
+    },
+    "counts": {
+      "central": 437,
+      "east": 404,
+      "north": 423,
+      "northeast": 384,
+      "south": 433,
+      "west": 419
+    }
+  },
+  "location_tier": {
+    "disparate_impact_ratio": 0.9026942660491774,
+    "passes_80_percent_rule": true,
+    "selection_rates": {
+      "metro": 0.5741626794258373,
+      "rural_cluster": 0.6012861736334405,
+      "tier_1": 0.6244343891402715,
+      "tier_2": 0.6360544217687075
+    },
+    "observed_default_rates": {
+      "metro": 0.02073365231259968,
+      "rural_cluster": 0.024115755627009645,
+      "tier_1": 0.02262443438914027,
+      "tier_2": 0.027210884353741496
+    },
+    "counts": {
+      "metro": 627,
+      "rural_cluster": 622,
+      "tier_1": 663,
+      "tier_2": 588
+    }
+  },
+  "sector": {
+    "disparate_impact_ratio": 0.8970092885577218,
+    "passes_80_percent_rule": true,
+    "selection_rates": {
+      "agri_allied": 0.5960264900662252,
+      "digital_services": 0.5987460815047022,
+      "food_service": 0.597667638483965,
+      "kirana_fmcg": 0.5807560137457045,
+      "light_manufacturing": 0.6128048780487805,
+      "professional_services": 0.5993265993265994,
+      "textiles": 0.6363636363636364,
+      "traders_distribution": 0.6474358974358975
+    },
+    "observed_default_rates": {
+      "agri_allied": 0.023178807947019868,
+      "digital_services": 0.025078369905956112,
+      "food_service": 0.023323615160349854,
+      "kirana_fmcg": 0.027491408934707903,
+      "light_manufacturing": 0.027439024390243903,
+      "professional_services": 0.020202020202020204,
+      "textiles": 0.01948051948051948,
+      "traders_distribution": 0.022435897435897436
+    },
+    "counts": {
+      "agri_allied": 302,
+      "digital_services": 319,
+      "food_service": 343,
+      "kirana_fmcg": 291,
+      "light_manufacturing": 328,
+      "professional_services": 297,
+      "textiles": 308,
+      "traders_distribution": 312
+    }
+  },
+  "capital_tier": {
+    "disparate_impact_ratio": 0.9019789632595461,
+    "passes_80_percent_rule": true,
+    "selection_rates": {
+      "lower_medium": 0.6492063492063492,
+      "micro": 0.5855704697986577,
+      "small": 0.603225806451613,
+      "upper_medium": 0.5963302752293578
+    },
+    "observed_default_rates": {
+      "lower_medium": 0.01746031746031746,
+      "micro": 0.030201342281879196,
+      "small": 0.02258064516129032,
+      "upper_medium": 0.024464831804281346
+    },
+    "counts": {
+      "lower_medium": 630,
+      "micro": 596,
+      "small": 620,
+      "upper_medium": 654
+    }
+  },
+  "business_location_tier": {
+    "disparate_impact_ratio": 0.8929755158772588,
+    "passes_80_percent_rule": true,
+    "selection_rates": {
+      "metro": 0.6219512195121951,
+      "rural_cluster": 0.6042692939244664,
+      "tier_1": 0.5695581014729951,
+      "tier_2": 0.6378205128205128
+    },
+    "observed_default_rates": {
+      "metro": 0.01676829268292683,
+      "rural_cluster": 0.014778325123152709,
+      "tier_1": 0.022913256955810146,
+      "tier_2": 0.04006410256410257
+    },
+    "counts": {
+      "metro": 656,
+      "rural_cluster": 609,
+      "tier_1": 611,
+      "tier_2": 624
+    }
+  }
+}
