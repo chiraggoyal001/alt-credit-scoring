@@ -1,668 +1,197 @@
-# Alternative Credit Model Simulation MVP
+# Alternative Credit Scoring Simulation
 
-This project is a runnable MVP for simulating alternative credit scoring for individuals and MSMEs. It creates synthetic, fairness-auditable data, trains four model pipelines, scores applicants, explains each scoring stage, compares against a transparent synthetic CIBIL-like benchmark, and exposes both a Streamlit workbench and FastAPI endpoints.
+An interactive prototype exploring how alternative cash-flow and business signals might supplement limited traditional credit history for **new-to-credit individuals, thin-file borrowers, and MSMEs in India**.
 
-The project is a simulation and research scaffold. It does not use real CIBIL internals, real Account Aggregator data, real UPI data, real telco data, or production GST/news feeds. Those are represented by engineered synthetic feature vectors.
+The aim is to make the product and model trade-offs inspectable: who gets evaluated, what signals are considered, how a score becomes a lending decision, and how access and simulated risk are compared. It is **not** a claim that this model outperforms TransUnion CIBIL or a production-ready lending decision system.
 
-## Current Status
+**[Open the live Streamlit app](https://alt-credit-scoring.streamlit.app/) · [View the source code](https://github.com/chiraggoyal001/alt-credit-scoring)**
 
-The MVP currently supports:
+> **Read this first:** this is a simulation using generated data and a transparent, synthetic CIBIL-like baseline. It does not use actual CIBIL scores or internals, live Account Aggregator/UPI/telco/GST/news feeds, or real borrower records. Results describe the assumptions in this simulation—not real-world credit performance.
 
-- Retail active scoring for individuals with a deeper behavioral and cash-flow footprint.
-- Retail cold-start scoring for thin-file individuals.
-- MSME active scoring for operating businesses.
-- MSME cold-start scoring for new or informal businesses entering formal credit.
-- Synthetic data generation for all four models.
-- Model training with a soft-voting ensemble.
-- Score testing through manual controls and JSON upload.
-- Replacement testing-data upload and evaluation.
-- Stage-by-stage scoring trace.
-- Fairness and disparate-impact reporting.
-- AltCredit versus synthetic CIBIL-like comparison.
-- Coverage audit for the original problem statement and pasted text.
+## The product question
 
-Latest generated simulation size:
+Can a lender make a more useful assessment when a person or small business has limited bureau history, by considering other evidence of cash flow and repayment capacity—while keeping risk, fairness, consent, and explainability visible?
 
-- `10,000` records per model
-- `40,000` total synthetic records
+A thin credit file is not itself proof that a borrower is unable to repay. This prototype explores the *design and evaluation questions* behind a supplementary assessment; it does not assume that every available alternative signal is appropriate to collect or use.
 
-Latest summary from `artifacts/reports/summary.json`:
+## Who the prototype is designed around
 
-| Model | Alt approval | Alt approved default | CIBIL-like approval | CIBIL-like approved default | Gini |
-|---|---:|---:|---:|---:|---:|
-| Retail Active | 81.96% | 3.66% | 46.00% | 7.83% | 0.750 |
-| Retail Cold-Start | 67.84% | 2.54% | 27.00% | 5.78% | 0.611 |
-| MSME Active | 77.88% | 1.80% | 42.00% | 5.05% | 0.736 |
-| MSME Cold-Start | 60.88% | 1.51% | 25.00% | 1.60% | 0.367 |
+| Applicant route | Intended context | Illustrative evidence themes |
+|---|---|---|
+| **Retail Active** | An individual with a richer financial and behavioural footprint | Inflow stability, obligations, payment regularity, and prior recovery where available |
+| **Retail Cold-Start** | A new-to-credit or thin-file individual | Consented utility/payment signals and other illustrative onboarding proxies |
+| **MSME Active** | An operating micro or small business | Revenue trends, margins, debt-service capacity, GST consistency, UPI/QR volatility, and working-capital pressure |
+| **MSME Cold-Start** | A new or informal business with limited operating history | Promoter and documentation proxies, capital sufficiency, licensing, and sector/cluster context |
 
-## Project Structure
+These are separate simulated routes because the available evidence and underwriting questions differ by applicant context. The feature lists are experimental; their appearance in the prototype is not an endorsement of their suitability for lending decisions.
 
-```text
-alt_credit_model_simulation/
-  altcredit/
-    backtest.py              Synthetic CIBIL-like benchmark and operating-point tuning
-    cli.py                   Command-line entry points
-    comparison.py            AltCredit versus CIBIL-like evaluation metrics
-    config.py                Global model labels, limits, and constants
-    coverage.py              Original-brief and pasted-text coverage audit
-    data.py                  Synthetic data generator
-    fairness.py              Disparate-impact and label-balance reports
-    feature_engineering.py   Reusable feature-engineering helpers
-    features.py              Model schemas and feature lists
-    models.py                Training pipelines and model artifacts
-    scoring.py               Score, trace, reason codes, pricing, exposure
-    templates.py             JSON score and testing-data templates
-  app.py                     Streamlit workbench
-  api.py                     FastAPI service
-  data/
-    synthetic/               Generated synthetic datasets
-    testing/                 Uploaded replacement testing data
-  artifacts/
-    models/                  Trained joblib model bundles
-    reports/                 Metrics, fairness reports, scored holdouts
-  docs/
-    data_dictionary.md
-    problem_structure.md
-    requirements_coverage.md
-  tests/
-    test_mvp.py
-  requirements.txt
+## What you can do in the workbench
+
+- **Overview** — inspect portfolio-level measures across the four scoring routes.
+- **Score Lab** — enter a hypothetical applicant profile or upload JSON and see its simulated score, 90-day probability of default (PD), decision, exposure limit, indicative risk-based APR, reason codes, and synthetic baseline result.
+- **Calculation Trace** — follow routing, input completion, feature diagnostics, ensemble probabilities, score scaling, thresholding, and the downstream exposure/pricing calculations.
+- **Testing Data** — evaluate a replacement labelled dataset instead of relying only on the generated sample.
+- **Model Comparison** — compare approval and rejection outcomes, approved-borrower default rates, ranking and probability metrics, and exposure proxies.
+- **JSON Templates** — download payload templates for single-applicant scoring and labelled evaluation records.
+- **Coverage Audit** — review which parts of the concept are represented in the simulation and which remain open design or integration questions.
+
+## How the simulation works
+
+```mermaid
+flowchart TD
+    A[Choose applicant route] --> B[Generate or enter synthetic features]
+    B --> C[Validate and preprocess inputs]
+    C --> D[Soft-voting model ensemble]
+    D --> E[Estimated 90-day default probability]
+    E --> F[Map PD to a 300–900 illustrative score]
+    F --> G[Apply tuned operating threshold]
+    G --> H[Approval / manual review / decline]
+    H --> I[Indicative exposure and APR rules]
+    I --> J[Inspect trace, metrics, fairness and baseline comparison]
 ```
 
-## Installation
+Each route uses a soft-voting ensemble of Gradient Boosting, Random Forest, calibrated Linear SVM, and a shallow Decision Tree, with route-specific weights. Numeric features are imputed and scaled; categorical fields are imputed and one-hot encoded where applicable.
 
-Install dependencies:
+The score is a simple transformation of the model-estimated default probability:
 
-```powershell
+`score = 300 + 600 × (1 − probability_of_default)`
+
+This 300–900 scale is an illustrative presentation layer, not a validated bureau-equivalent score. Approval thresholds, exposure limits, and APR outputs are simulation policies, not lending recommendations.
+
+## Evaluation: what is measured
+
+The comparison code reports multiple views of the problem rather than relying on accuracy alone.
+
+| Lens | Examples in the workbench | Product question |
+|---|---|---|
+| Access | Approval and decline rates; good-borrower rejection rate | Who could become eligible under this policy? |
+| Risk | Default rate among approved/declined; bad-borrower approval rate | What risk does the simulated policy accept? |
+| Ranking and probability | ROC AUC, Gini, average precision, Brier loss, precision, recall, accuracy | How well do predictions rank and estimate the generated outcome? |
+| Portfolio | Average limit, total approved exposure, expected-loss proxy | What might the policy imply for a hypothetical book? |
+| Fairness diagnostics | Selection rate and default rate by audit group; disparate-impact ratio | Are decision outcomes uneven across the generated groups? |
+
+The model-selection objective is deliberately framed as a trade-off: expand simulated access without allowing the approved-borrower default rate to exceed the synthetic baseline where a feasible threshold exists. When no candidate meets the intended constraints, the code falls back to a risk-adjusted operating point and records the chosen point in its reports.
+
+### The baseline is synthetic—not TransUnion CIBIL
+
+The comparator is a transparent formula using a smaller set of variables and configured approval rates. It exists to give the simulation a reproducible reference point. Real CIBIL scoring logic and score-level outcomes are not replicated here, and the project has not been validated on a matched, real-world borrower sample.
+
+For that reason, do not interpret the app's approval lift or simulated default-rate delta as evidence that this model is “better than CIBIL.” The defensible conclusion is narrower: **the prototype demonstrates how an alternative-credit hypothesis could be tested, instrumented, and challenged.**
+
+## Product and responsible-use considerations
+
+Alternative data can add context, but it can also add privacy, consent, proxy-discrimination, and explainability risks. Some variables currently represented in the synthetic generator—such as device characteristics, app composition, typing cadence, geolocation routines, telco/SMS metadata, and inferred stress or literacy—are especially sensitive or indirect proxies.
+
+A production-bound design should not carry these signals forward merely because they improve results on generated data. Each candidate signal would need documented necessity, lawful basis, meaningful consent where required, data minimisation, reliability testing, explainable use, subgroup analysis, and a clear challenge/appeal path. Business cash-flow evidence should be evaluated separately from consumer-device surveillance-style signals.
+
+The current fairness report is a diagnostic, not a fairness certification. Protected/audit fields are excluded from ordinary feature lists, but the synthetic generator deliberately distributes audit groups across simulated risk deciles. A favourable result on this constructed dataset therefore cannot establish real-world fairness.
+
+## Run locally
+
+The live app is available at the link above. To reproduce the simulation locally, use Python 3.9 or newer and run these commands from the repository root.
+
+```bash
+git clone https://github.com/chiraggoyal001/alt-credit-scoring.git
+cd alt-credit-scoring
+python -m venv .venv
+```
+
+Activate the environment:
+
+```bash
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+
+# macOS / Linux
+source .venv/bin/activate
+```
+
+Install dependencies, generate data, and train all routes:
+
+```bash
 python -m pip install -r requirements.txt
+python -m altcredit.cli run-all --rows 5000
 ```
 
-If your Anaconda environment has SSL issues, use:
+Start the Streamlit workbench:
 
-```powershell
-python -m pip install -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org
+```bash
+streamlit run app.py
 ```
 
-The project uses:
+Run the test suite:
 
-- Python 3.9+
-- pandas
-- numpy
-- scikit-learn
-- joblib
-- Streamlit
-- FastAPI
-- Uvicorn
-
-## Quick Start
-
-Generate synthetic data, train all four models, and write reports:
-
-```powershell
-python -m altcredit.cli run-all --rows 10000
+```bash
+python -m unittest discover -s tests
 ```
 
-Run a faster smoke-test training pass:
+For a faster development/smoke-test pass:
 
-```powershell
+```bash
 python -m altcredit.cli run-all --rows 1000 --fast
 ```
 
-Run tests:
+The command-line tools also support generating data, training from existing synthetic datasets, scoring a default synthetic applicant, printing JSON templates, showing the calculation trace, and evaluating an uploaded labelled JSON file. See the CLI help or the application’s **JSON Templates** view for payload structure.
 
-```powershell
-python -m unittest discover -s tests
-```
+### API
 
-Run the Streamlit workbench:
+Run the FastAPI service after creating the model artifacts:
 
-```powershell
-streamlit run app.py
-```
-
-Run the API:
-
-```powershell
+```bash
 uvicorn api:app --reload --port 8000
 ```
 
-## Streamlit Workbench
+Available routes include `GET /health`, `GET /models`, score/testing JSON template endpoints, `POST /score`, `POST /score/trace`, and `POST /evaluate/testing-data`. The API is part of the prototype; it is not an authenticated or production-hardened lending API.
 
-The app has seven views.
-
-### Overview
-
-Shows portfolio-level metrics across all four models:
-
-- Approval rate comparison.
-- Approved default rate comparison.
-- Average approval lift.
-- Average default-rate delta.
-- Average Gini.
-- Selected-model score snapshot.
-
-The Overview page avoids Streamlit Altair charts and uses native HTML/dataframe visuals, so it does not depend on Altair or MarkupSafe.
-
-### Score Lab
-
-Lets you manually test an applicant or business. Inputs are grouped by underwriting concept:
-
-- Cash Flow And Spend
-- Routine And Telco
-- Intent And Literacy
-- Onboarding And Device
-- 3D Business Category
-- GST, P&L, Cash Flow
-- Macro And Ecosystem
-- Promoter And Documentation
-
-It returns:
-
-- Alt score
-- Probability of default over 90 days
-- Approval/manual review/decline decision
-- Dynamic exposure limit
-- Risk-based APR
-- Reason codes
-- CIBIL-like benchmark decision
-
-You can also upload JSON for single-score testing.
-
-### Calculation Trace
-
-Shows the full scoring path:
-
-1. Model route
-2. Input validation and missing-field fill strategy
-3. Feature diagnostics against training quantiles
-4. Base learner probabilities
-5. Final PD and 300-900 score scaling
-6. Operating-point thresholding
-7. Exposure and pricing
-8. CIBIL-like benchmark comparison
-
-Partial JSON uploads are allowed for score testing. Missing fields are filled with training medians or known categories, and the trace shows which fields were filled.
-
-### Testing Data
-
-Lets you upload a JSON file that replaces the testing data for a selected model. The uploaded file is saved to:
+## Repository map
 
 ```text
-data/testing/{model_type}_replacement.json
+alt-credit-scoring/
+├── app.py                         # Streamlit workbench
+├── api.py                         # FastAPI endpoints
+├── altcredit/
+│   ├── data.py                    # Synthetic dataset generation
+│   ├── features.py                # Feature schemas and route definitions
+│   ├── feature_engineering.py     # Feature helpers
+│   ├── models.py                  # Preprocessing, ensemble training, reports
+│   ├── backtest.py                # Threshold tuning and synthetic baseline
+│   ├── scoring.py                 # Scoring, decision trace, reason codes
+│   ├── comparison.py               # Performance and portfolio comparisons
+│   ├── fairness.py                 # Group selection-rate diagnostics
+│   └── cli.py                     # Command-line workflows
+├── data/synthetic/                # Generated datasets
+├── docs/
+│   ├── data_dictionary.md
+│   ├── problem_structure.md
+│   ├── requirements_coverage.md
+│   ├── portfolio_case_study.md
+│   ├── evaluation_and_governance.md
+│   ├── product_roadmap.md
+│   └── portfolio_demo_guide.md
+├── tests/test_mvp.py
+└── requirements.txt
 ```
 
-The app then scores it and writes:
+Model bundles and run reports are generated under `artifacts/` when the pipeline runs; they are not treated as permanent benchmark results in this README. Regenerate them before discussing any metric values.
 
-```text
-artifacts/reports/{model_type}_uploaded_comparison.json
-artifacts/reports/{model_type}_uploaded_scored_testing_data.csv
-```
+## Product management lens
 
-Uploaded testing data must include:
+The portfolio value is in making a consequential, ambiguous product problem concrete:
 
-- all feature columns for that model
-- `default_90d`
+- **Segmentation:** different evidence and constraints for active-history and cold-start retail/MSME routes.
+- **Decision design:** a visible trade-off between access and risk, with a manual-review state rather than treating every score as an automatic yes/no.
+- **Evaluation:** multiple ranking, calibration, decision, and portfolio metrics to expose trade-offs.
+- **Transparency:** a step-by-step scoring trace and reason codes that can be inspected during a demo.
+- **Responsible product thinking:** synthetic data boundaries, audit-group diagnostics, and explicit questions about consent, signal necessity, recourse, and deployment readiness.
 
-### Model Comparison
+Supporting notes: [Product case study](docs/portfolio_case_study.md) · [Evaluation and governance](docs/evaluation_and_governance.md) · [Product roadmap](docs/product_roadmap.md) · [Portfolio demo guide](docs/portfolio_demo_guide.md)
 
-Compares AltCredit and the synthetic CIBIL-like benchmark across:
+## Current limitations and next steps
 
-- approval rate
-- decline rate
-- default rate among approved
-- default rate among declined
-- good borrowers rejected
-- bad borrowers approved
-- ROC AUC
-- Gini
-- average precision
-- Brier loss
-- default precision
-- default recall
-- accuracy
-- average score
-- median score
-- score threshold
-- risk cutoff
-- average approved limit
-- total approved exposure
-- expected-loss proxy
-- lift and delta values
+This is an exploratory MVP. It has no real borrower dataset, real bureau benchmark, live alternative-data integrations, regulatory approval, lender pilot, or validated business impact. The current evaluation also needs a stricter validation design before its metrics can be interpreted as an honest estimate of unseen performance: the operating threshold is tuned on the same held-out partition used for metric reporting. A separate validation partition and untouched final test set should be introduced.
 
-### JSON Templates
+The next iteration should first strengthen experimental validity and signal governance, then validate the most defensible, consent-based data sources with lenders and borrowers. The roadmap document turns these into staged product and model work.
 
-Provides downloadable templates for:
+---
 
-- single-score JSON
-- replacement testing-data JSON
-
-### Coverage Audit
-
-Checks whether the original problem statement and pasted text are covered. It also lists what remains as a production integration or governance question.
-
-## CLI Commands
-
-Generate data only:
-
-```powershell
-python -m altcredit.cli generate --rows 10000
-```
-
-Train from existing data:
-
-```powershell
-python -m altcredit.cli train --data data/synthetic
-```
-
-Generate and train:
-
-```powershell
-python -m altcredit.cli run-all --rows 10000
-```
-
-Score a median synthetic applicant:
-
-```powershell
-python -m altcredit.cli score --model-type retail_active
-```
-
-Show complete scoring trace:
-
-```powershell
-python -m altcredit.cli score --model-type retail_active --trace
-```
-
-Print a score JSON template:
-
-```powershell
-python -m altcredit.cli template --model-type retail_active --kind score
-```
-
-Print a testing-data JSON template:
-
-```powershell
-python -m altcredit.cli template --model-type retail_active --kind testing-data
-```
-
-Evaluate a replacement testing-data JSON file:
-
-```powershell
-python -m altcredit.cli evaluate-json --file .\my_testing_data.json --model-type retail_active
-```
-
-## API
-
-Start the API:
-
-```powershell
-uvicorn api:app --reload --port 8000
-```
-
-Health:
-
-```http
-GET /health
-```
-
-Models:
-
-```http
-GET /models
-```
-
-Score template:
-
-```http
-GET /templates/score/{model_type}
-```
-
-Testing-data template:
-
-```http
-GET /templates/testing-data/{model_type}
-```
-
-Score:
-
-```http
-POST /score
-```
-
-Body:
-
-```json
-{
-  "model_type": "retail_active",
-  "features": {
-    "monthly_inflow_inr": 30000,
-    "inflow_stability_90d": 0.62
-  }
-}
-```
-
-Trace:
-
-```http
-POST /score/trace
-```
-
-Evaluate uploaded testing data:
-
-```http
-POST /evaluate/testing-data
-```
-
-Body:
-
-```json
-{
-  "model_type": "retail_active",
-  "records": [
-    {
-      "monthly_inflow_inr": 30000,
-      "inflow_stability_90d": 0.62,
-      "upi_debit_velocity_variance": 0.20,
-      "fixed_obligation_ratio": 0.25,
-      "discretionary_spend_ratio": 0.30,
-      "essential_payment_timeliness": 0.80,
-      "routine_entropy": 0.25,
-      "commute_consistency": 0.75,
-      "telco_recharge_regularity": 0.78,
-      "prior_loan_recovery_ratio": 0.82,
-      "network_working_ratio": 0.76,
-      "bot_financial_stress_index": 0.20,
-      "bot_repayment_intent_score": 0.80,
-      "financial_literacy_score": 0.70,
-      "blog_completion_rate": 0.60,
-      "default_90d": 0
-    }
-  ]
-}
-```
-
-## Model Architecture
-
-Each model uses a soft-voting ensemble:
-
-- Gradient Boosting
-- Random Forest
-- Calibrated Linear SVM
-- Shallow Decision Tree
-
-The blend is intentionally pragmatic:
-
-- Gradient Boosting captures strong non-linear tabular patterns.
-- Random Forest improves robustness under noisy alternative data.
-- SVM contributes margin-based separation after preprocessing.
-- Shallow Decision Tree contributes interpretable rule-like behavior.
-
-The score is derived from predicted default probability:
-
-```text
-score = 300 + 600 * (1 - probability_default_90d)
-```
-
-The underwriting decision uses a tuned operating point selected on holdout data.
-
-## Models
-
-### Model 1: Retail Active
-
-For individuals with deeper behavioral and financial footprints.
-
-Feature themes:
-
-- UPI debit velocity
-- monthly inflow
-- fixed obligations
-- discretionary spend
-- essential payment timeliness
-- geolocation routine entropy
-- commute consistency
-- telco regularity
-- prior loan recovery
-- network working ratio
-- bot stress
-- repayment intent
-- financial literacy
-- blog completion
-
-### Model 2: Retail Cold-Start
-
-For thin-file individuals.
-
-Feature themes:
-
-- device hardware score
-- device integrity
-- useful app ratio
-- high-risk app ratio
-- onboarding hesitation
-- typing cadence stability
-- copy-paste flag
-- SMS utility payment regularity
-- SMS income signal
-- telco network stability
-- consent completeness
-- network mobility consistency
-
-### Model 3: MSME Active
-
-For operating businesses.
-
-Feature themes:
-
-- sector
-- capital tier
-- business location tier
-- revenue
-- revenue growth
-- gross margin
-- debt-service coverage
-- GST filing delay
-- GST consistency
-- ITC reconciliation
-- QR/UPI volatility
-- bounced mandates
-- supplier concentration
-- working capital gap
-- industry beta
-- district news sentiment
-- infrastructure anomaly
-- sector growth
-- promoter score
-
-### Model 4: MSME Cold-Start
-
-For newly registered or informal businesses.
-
-Feature themes:
-
-- sector
-- capital tier
-- business location tier
-- promoter score
-- prior recovery proxy
-- sector survival rate
-- pincode cluster survival rate
-- capital sufficiency
-- document consistency
-- incorporation age
-- licensing completeness
-- peer default rate
-- industry beta
-- startup expense coverage
-
-## Synthetic Data
-
-The generator creates synthetic records for all four models. It includes:
-
-- model features
-- audit fields
-- simulated default probabilities
-- `default_90d` target labels
-
-Protected or sensitive audit fields are used for reporting, not for ordinary individual model features.
-
-Examples:
-
-- gender
-- age band
-- state group
-- urbanicity
-- promoter gender
-- promoter age band
-- audit location tier
-
-Legitimate business underwriting categories are modeled:
-
-- sector
-- capital tier
-- business location tier
-
-## Fairness Reports
-
-Fairness reports are written to:
-
-```text
-artifacts/reports/*_fairness.json
-```
-
-They include:
-
-- selection rates by audit group
-- observed default rates by group
-- disparate impact ratio
-- 80 percent rule pass/fail flag
-
-Latest generated reports pass the 80 percent rule for all four models.
-
-## CIBIL-Like Benchmark
-
-The comparison benchmark is not the real CIBIL model. It is a synthetic legacy-bureau proxy that intentionally uses fewer, lagging variables.
-
-Reason:
-
-- Real CIBIL scoring logic is proprietary.
-- Publicly available inputs are not enough to reproduce it.
-- A transparent benchmark is better for testing than pretending to know the real model.
-
-The benchmark is implemented in:
-
-```text
-altcredit/backtest.py
-```
-
-## Output Files
-
-After `run-all`, expect:
-
-```text
-data/synthetic/retail_active.csv
-data/synthetic/retail_cold_start.csv
-data/synthetic/msme_active.csv
-data/synthetic/msme_cold_start.csv
-
-artifacts/models/retail_active.joblib
-artifacts/models/retail_cold_start.joblib
-artifacts/models/msme_active.joblib
-artifacts/models/msme_cold_start.joblib
-
-artifacts/reports/summary.json
-artifacts/reports/*_metrics.json
-artifacts/reports/*_fairness.json
-artifacts/reports/*_label_balance.json
-artifacts/reports/*_scored_holdout.csv
-```
-
-## Validation Checklist
-
-Run:
-
-```powershell
-python -m compileall altcredit api.py app.py
-python -m unittest discover -s tests
-python -m altcredit.cli score --model-type retail_active --trace
-python -m altcredit.cli template --model-type retail_active --kind testing-data
-```
-
-Start the app and API:
-
-```powershell
-streamlit run app.py
-uvicorn api:app --reload --port 8000
-```
-
-Expected:
-
-- Overview page loads without Altair or MarkupSafe errors.
-- Model Comparison page loads without Altair or MarkupSafe errors.
-- Score Lab can score manual inputs.
-- Score JSON upload can handle partial feature JSON.
-- Calculation Trace shows missing-field fill details.
-- Testing Data upload requires complete feature records plus `default_90d`.
-- Coverage Audit shows pasted-text and original-brief coverage.
-
-## Troubleshooting
-
-### ImportError: cannot import name `soft_unicode` from `markupsafe`
-
-This happened when Streamlit tried to use Altair through `st.bar_chart`. The app no longer uses `st.bar_chart`, so Overview and Model Comparison should not hit this path.
-
-If you still see it, restart Streamlit:
-
-```powershell
-Get-Process | Where-Object { $_.ProcessName -like '*python*' }
-streamlit run app.py
-```
-
-### FastAPI typing_extensions error
-
-Install a newer typing extensions package:
-
-```powershell
-python -m pip install --upgrade "typing_extensions>=4.8"
-```
-
-### Broken NumPy install
-
-If NumPy fails with missing internal modules, reinstall:
-
-```powershell
-python -m pip install --force-reinstall --no-cache-dir "numpy==1.23.5"
-```
-
-### SSL errors during pip install
-
-Use trusted hosts:
-
-```powershell
-python -m pip install -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org
-```
-
-## Production Caveats
-
-Before production, this MVP needs:
-
-- legal consent design for UPI, telco, SDK, bot chat, blog, and GST data
-- Account Aggregator integration
-- UPI and telco integrations
-- GST and P&L ingestion
-- real news and district-level event ingestion
-- explicit 15 DPD, 30 DPD, and 90 DPD target modeling
-- production SHAP or equivalent explainability
-- adverse-action notice templates
-- monitoring for drift and fairness
-- human review workflow
-- security hardening
-- model governance and audit logs
-
-## Current Running URLs
-
-When started locally:
-
-```text
-Streamlit: http://localhost:8501
-FastAPI:   http://127.0.0.1:8000
-```
-
+*Independent product and technical simulation. Outputs are educational and experimental—not credit advice, a credit bureau score, a lending decision, or evidence of real-world model superiority.*
